@@ -202,9 +202,27 @@ gitflow_load_settings() {
 	export DOT_GIT_DIR=$(git rev-parse --git-dir 2>/dev/null)
 	export MASTER_BRANCH=$(git config --get gitflow.branch.master)
 	export DEVELOP_BRANCH=$(git config --get gitflow.branch.develop)
+	export SECONDARY_DEVELOP_BRANCHES_COUNT=$(git config --get gitflow.branches.count)
+
+				local branch_name
+			for (( i=1; i<=SECONDARY_DEVELOP_BRANCHES_COUNT; i++ ))
+			do
+				export "SECONDARY_DEVELOP_BRANCH_$i"=$(git config --get gitflow.branches.b$i)
+				
+			   name=$(secondary_develop_branch_number $i)
+			   echo $name
+			    
+
+			done
 	export ORIGIN=$(git config --get gitflow.origin || echo origin)
 }
 
+#returns the value of secondary develop branch number $1
+secondary_develop_branch_number(){
+	 a=$(echo $"SECONDARY_DEVELOP_BRANCH_$1")
+	  echo "${!a}"
+
+}
 #
 # gitflow_resolve_nameprefix
 #
