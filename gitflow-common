@@ -206,7 +206,16 @@ gitflow_load_settings() {
 
 		for (( i=1; i<=SECONDARY_DEVELOP_BRANCHES_COUNT; i++ ))
 			do
-				export "SECONDARY_DEVELOP_BRANCH_$i"=$(git config --get gitflow.branches.b$i)
+				local branch_name=$(git config --get gitflow.branches.b$i)
+
+				if [ "$branch_name" != "" ]; then
+					echo "$branch_name"
+					export "SECONDARY_DEVELOP_BRANCH_$i"="$branch_name"
+				else
+					die "fatal: secondary develop branch #$i not found"
+				fi
+
+
 			done
 	export ORIGIN=$(git config --get gitflow.origin || echo origin)
 }
