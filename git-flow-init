@@ -269,6 +269,20 @@ cmd_default() {
 		created_gitflow_branch=1
 	fi
 
+	count=$(git config --get gitflow.branches.count)
+
+	for (( i=1; i<=count; i++ ))
+		do
+			branch_name=$(git config --get gitflow.branches.b$i)
+			if ! git_local_branch_exists "$branch_name"; then
+				if git_remote_branch_exists "origin/$branch_name"; then
+					git_do branch "$branch_name" "origin/$branch_name" >/dev/null 2>&1
+				else
+					git_do branch --no-track "$branch_name" "$master_branch"
+				fi
+			fi
+		done
+
 	# assert the gitflow repo has been correctly initialized
 	gitflow_is_initialized
 
@@ -364,7 +378,6 @@ cmd_default() {
 
 create_secondary_develop_branch_number(){
 
-	echo "Creating secondary develop branch #$1."
 
 	local secondary_develop_branch
 	#Add func to test if secondary branch number i exists then enable this code
@@ -423,6 +436,7 @@ create_secondary_develop_branch_number(){
 
 		# store the name of the develop branch
 		git_do config gitflow.branches.b$1 "$secondary_develop_branch"
+
 	#fi
 }
 
