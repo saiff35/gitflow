@@ -170,6 +170,12 @@ gitflow_has_master_configured() {
 	[ "$master" != "" ] && git_local_branch_exists "$master"
 }
 
+gitflow_has_develop_branches_count_configured() {
+	local developCount=$(git config --get gitflow.branches.count)
+	[ "$developCount" != "" ]
+}
+
+
 gitflow_has_develop_configured() {
 	local develop=$(git config --get gitflow.branch.develop)
 	[ "$develop" != "" ] && git_local_branch_exists "$develop"

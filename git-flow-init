@@ -188,6 +188,55 @@ cmd_default() {
 		git_do config gitflow.branch.develop "$develop_branch"
 	fi
 
+	# add develop branches count if not exists yet
+	local develop_branches_count
+	if gitflow_has_develop_branches_count_configured && ! flag force; then
+		develop_branches_count=$(git config --get gitflow.branches.count)
+	else
+		# Again, the same two cases as with the master selection are
+		# considered (fresh repo or repo that contains branches)
+		local default_suggestion
+
+		branch_count=$(git_local_branches | grep -v "^${master_branch}\$" | wc -l)
+		if [ "$branch_count" -eq 0 ]; then
+			default_suggestion=$(git config --get --get gitflow.branches.count|| echo 2)
+		else
+			echo
+			echo "How many secondary develop branches should there be?"
+
+			default_suggestion=2
+			
+			#if [ -z $default_suggestion ]; then
+			#	default_suggestion=$(git config --get gitflow.branch.develop || echo develop)
+			#fi
+			
+		fi
+
+		printf "Secondary develop branches count: [$default_suggestion]"
+		if noflag defaults; then
+			read answer
+		else
+			printf "\n"
+		fi
+		develop_branches_count=${answer:-$default_suggestion}
+
+	
+
+	
+
+		# store the count of the secondary develop branches
+		git_do config gitflow.branches.count "$develop_branches_count"
+
+		if [ "$develop_branches_count" -eq 0 ]; then
+			echo "No secondary develop branches."
+		else
+			for (( i=1; i<=develop_branches_count; i++ ))
+				do
+					create_secondary_develop_branch_number $i
+				done
+		fi
+	fi
+
 	# Creation of HEAD
 	# ----------------
 	# We create a HEAD now, if it does not exist yet (in a fresh repo). We need
@@ -311,6 +360,70 @@ cmd_default() {
 
 
 	# TODO: what to do with origin?
+}
+
+create_secondary_develop_branch_number(){
+
+	echo "Creating secondary develop branch #$1."
+
+	local secondary_develop_branch
+	#Add func to test if secondary branch number i exists then enable this code
+	#if gitflow_has_develop_configured && ! flag force; then
+	#	develop_branch=$(git config --get gitflow.branch.develop)
+	#else
+		# Again, the same two cases as with the master selection are
+		# considered (fresh repo or repo that contains branches)
+		local default_suggestion
+		local should_check_existence
+		branch_count=$(git_local_branches | grep -v "^${master_branch}\$" | grep -v "^${develop_branch}\$" | wc -l)
+		if [ "$branch_count" -eq 0 ]; then
+			should_check_existence=NO
+			default_suggestion=$(git config --get gitflow.branches.b$1 || echo develop$1)
+			
+		else
+
+			echo
+			echo "Which branch should be used as secondary branch #$1 ?"
+			git_local_branches | grep -v "^${master_branch}\$" | grep -v "^${develop_branch}\$"  | sed 's/^.*$/   - &/g'
+
+			should_check_existence=YES
+			default_suggestion=
+			for guess in $(git config --get gitflow.branches.b$1) \
+			             'develop$1' 'int' 'integration' 'master'; do
+				if git_local_branch_exists "$guess" && [ "$guess" != "$master_branch" ]; then
+					default_suggestion="$guess"
+					break
+				fi
+			done
+			
+			if [ -z $default_suggestion ]; then
+				should_check_existence=NO
+				default_suggestion=$(git config --get gitflow.branches.b$1 || echo develop$1)
+			fi
+			
+		fi
+
+		printf "Branch name for secondary develop #$1: [$default_suggestion] "
+		if noflag defaults; then
+			read answer
+		else
+			printf "\n"
+		fi
+		secondary_develop_branch=${answer:-$default_suggestion}
+
+		if [ "$master_branch" = "$secondary_develop_branch" ]; then
+			die "Production and integration branches should differ."
+		fi
+
+		# check existence in case of an already existing repo
+		if [ "$should_check_existence" = "YES" ]; then
+			git_local_branch_exists "$secondary_develop_branch" || \
+				die "Local branch '$secondary_develop_branch' does not exist."
+		fi
+
+		# store the name of the develop branch
+		git_do config gitflow.branches.b$1 "$secondary_develop_branch"
+	#fi
 }
 
 cmd_help() {
