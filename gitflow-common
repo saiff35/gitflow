@@ -204,7 +204,6 @@ gitflow_load_settings() {
 	export DEVELOP_BRANCH=$(git config --get gitflow.branch.develop)
 	export SECONDARY_DEVELOP_BRANCHES_COUNT=$(git config --get gitflow.branches.count)
 
-		local branch_name
 		for (( i=1; i<=SECONDARY_DEVELOP_BRANCHES_COUNT; i++ ))
 			do
 				export "SECONDARY_DEVELOP_BRANCH_$i"=$(git config --get gitflow.branches.b$i)
