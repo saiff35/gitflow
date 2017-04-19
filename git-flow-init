@@ -425,8 +425,20 @@ create_secondary_develop_branch_number(){
 		secondary_develop_branch=${answer:-$default_suggestion}
 
 		if [ "$master_branch" = "$secondary_develop_branch" ]; then
-			die "Production and integration branches should differ."
+			die "Production and secondary develop branches should differ."
 		fi
+
+		if [ "$develop_branch" = "$secondary_develop_branch" ]; then
+			die "Integration branch and secondary develop branches should differ."
+		fi
+
+		for (( j=1; j<$1; j++ ))
+			do
+				local branch_name=$(git config --get gitflow.branches.b$j)
+				if [ "$branch_name" = "$secondary_develop_branch" ]; then
+					die "Integration branch and secondary develop branches should differ."
+				fi
+			done
 
 		# check existence in case of an already existing repo
 		if [ "$should_check_existence" = "YES" ]; then
