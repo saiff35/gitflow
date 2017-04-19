@@ -330,12 +330,14 @@ cmd_finish() {
 	if flag push; then
 		git_do push "$ORIGIN" "$DEVELOP_BRANCH" || \
 			die "Could not push to $DEVELOP_BRANCH from $ORIGIN."
+
 		for (( i=1; i<=SECONDARY_DEVELOP_BRANCHES_COUNT; i++ ))
 			do
 				name=$(secondary_develop_branch_number $i)
 				git_do push "$ORIGIN" "$name" || \
 				die "Could not push to $name from $ORIGIN."
 			done
+			
 		git_do push "$ORIGIN" "$MASTER_BRANCH" || \
 			die "Could not push to $MASTER_BRANCH from $ORIGIN."
 		if noflag notag; then
