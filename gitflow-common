@@ -202,7 +202,7 @@ gitflow_load_settings() {
 	export DOT_GIT_DIR=$(git rev-parse --git-dir 2>/dev/null)
 	export MASTER_BRANCH=$(git config --get gitflow.branch.master)
 	export DEVELOP_BRANCH=$(git config --get gitflow.branch.develop)
-	export SECONDARY_DEVELOP_BRANCHES_COUNT=$(git config --get gitflow.branches.count)
+	export SECONDARY_DEVELOP_BRANCHES_COUNT=$(git config --get gitflow.branches.count || echo 0)
 
 		for (( i=1; i<=SECONDARY_DEVELOP_BRANCHES_COUNT; i++ ))
 			do
