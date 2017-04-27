@@ -214,6 +214,15 @@ cmd_finish() {
 		  die "Could not fetch $MASTER_BRANCH from $ORIGIN."
 		git_do fetch -q "$ORIGIN" "$DEVELOP_BRANCH" || \
 		  die "Could not fetch $DEVELOP_BRANCH from $ORIGIN."
+
+		for (( i=1; i<=SECONDARY_DEVELOP_BRANCHES_COUNT; i++ ))
+			do
+				name=$(secondary_develop_branch_number $i)
+				git_do fetch -q "$ORIGIN"  "$name" || \
+		  		die "Could not fetch $name from $ORIGIN."
+		  	done
+
+
 	fi
 	if has "$ORIGIN/$MASTER_BRANCH" $(git_remote_branches); then
 		require_branches_equal "$MASTER_BRANCH" "$ORIGIN/$MASTER_BRANCH"
@@ -221,6 +230,14 @@ cmd_finish() {
 	if has "$ORIGIN/$DEVELOP_BRANCH" $(git_remote_branches); then
 		require_branches_equal "$DEVELOP_BRANCH" "$ORIGIN/$DEVELOP_BRANCH"
 	fi
+
+	for (( i=1; i<=SECONDARY_DEVELOP_BRANCHES_COUNT; i++ ))
+		do
+			name=$(secondary_develop_branch_number $i)
+			if has "$ORIGIN/$name" $(git_remote_branches); then
+				require_branches_equal "$name" "$ORIGIN/$name"
+			fi
+		done
 
 	# try to merge into master
 	# in case a previous attempt to finish this release branch has failed,
@@ -276,6 +293,32 @@ cmd_finish() {
 		fi
 	fi
 
+
+	for (( i=1; i<=SECONDARY_DEVELOP_BRANCHES_COUNT; i++ ))
+		do
+			name=$(secondary_develop_branch_number $i)
+			# try to merge into develop
+			# in case a previous attempt to finish this release branch has failed,
+			# but the merge into develop#i was successful, we skip it now
+			if ! git_is_branch_merged_into "$BRANCH" "$name"; then
+			git_do checkout "$name" || \
+		 	 die "Could not check out $name."
+
+		# TODO: Actually, accounting for 'git describe' pays, so we should
+		# ideally git merge --no-ff $tagname here, instead!
+				if noflag squash; then
+					git_do merge --no-ff "$BRANCH" || \
+					die "There were merge conflicts."
+					# TODO: What do we do now?
+					else
+					git_do merge --squash "$BRANCH" || \
+					die "There were merge conflicts."
+					# TODO: What do we do now?
+					git_do commit
+				fi
+			fi
+		done
+
 	# delete branch
 	if noflag keep; then
 		if [ "$BRANCH" = "$(git_current_branch)" ]; then
@@ -287,6 +330,14 @@ cmd_finish() {
 	if flag push; then
 		git_do push "$ORIGIN" "$DEVELOP_BRANCH" || \
 			die "Could not push to $DEVELOP_BRANCH from $ORIGIN."
+
+		for (( i=1; i<=SECONDARY_DEVELOP_BRANCHES_COUNT; i++ ))
+			do
+				name=$(secondary_develop_branch_number $i)
+				git_do push "$ORIGIN" "$name" || \
+				die "Could not push to $name from $ORIGIN."
+			done
+			
 		git_do push "$ORIGIN" "$MASTER_BRANCH" || \
 			die "Could not push to $MASTER_BRANCH from $ORIGIN."
 		if noflag notag; then
@@ -305,13 +356,14 @@ cmd_finish() {
 		echo "- The release was tagged '$tagname'"
 	fi
 	echo "- Release branch has been back-merged into '$DEVELOP_BRANCH'"
+	echo "- Release branch has been back-merged into secondary develop branches"
 	if flag keep; then
 		echo "- Release branch '$BRANCH' is still available"
 	else
 		echo "- Release branch '$BRANCH' has been deleted"
 	fi
 	if flag push; then
-		echo "- '$DEVELOP_BRANCH', '$MASTER_BRANCH' and tags have been pushed to '$ORIGIN'"
+		echo "- '$DEVELOP_BRANCH', secondary develop branches, '$MASTER_BRANCH' and tags have been pushed to '$ORIGIN'"
 		echo "- Release branch '$BRANCH' in '$ORIGIN' has been deleted."
 	fi
 	echo
